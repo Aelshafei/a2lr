@@ -1,17 +1,17 @@
-# a2lr | Apache Access Log Reporter - Beta
-a2lr is an ongoing project, its aim is to be a comprehensive solution to analyze and generate reports based on **Apache Access Log files** in order to get an overall staus of the  accessability of an online application. It can be run as a cronjob, also, it can be run manually .
+# a2lr | Apache Access Log Reporter - Early Development
+a2lr is an ongoing project, its aim is to be a comprehensive solution to analyze and generate reports based on **Apache Access Log files** in order to get  overall   accessability staus of an online application. It can be run as a cronjob, also, it can be run manually .
 This project targets all grades of web application from a tiny web server to a complex enviroment with several web server .
 
 ## Features
-- can process log files from many web servers of the same web environment using SSH or locally
-- Can send reports by Emails
-- Eligible to custome LogFormat pattrerns
+- it can process log files from several web servers of the same web environment using SSH or just one local server
+- it can send reports by Emails
+- Eligible to fetch access logs based on custom LogFormat pattrerns
 - No need to install custom Python modules
 - Support legacy Python versions (Python 2.4)
 - Easy Configuration
 
 ## How It Works
-1- Script loads the configuration to define the following :
+1- first, it reads the configuration to define the following :
 - The period needed to get report about (1 day, 2h ..etc )
 - From where the log files will be got (Remotely or locally)
 
