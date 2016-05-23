@@ -165,3 +165,206 @@ HTTP_STATUS_CODE_OCCUR = {
 	'510' : 0,
 	'511' :0
 }
+
+EMAIL_HTML_TEMPLATE = '''From: __FROM_EMAIL
+To: __TO_EMAILS
+Subject: __SUBJECT
+Content-Type: text/html
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+	<body style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;min-width: 400px">
+		<table style="font-family: 'trebuchet MS';" width="100%" border="0" cellspacing="0" cellpadding="0">
+			<tr>
+				<td align="center">
+					<h2 style="color:#CD2A25;text-align"> __ENVIRONMENT | Apache Access Log Reporter (a2lr) </h2>
+				</td>
+			</tr>
+		</table>
+		<table style="width:100%; font-family: 'trebuchet MS';" >
+			<tr>
+				<td style="text-align:left;display:inline;width:33%" ><h3 style="font-weight: normal;display:inline"><b>Period Frame : </b> __PERIOD_FRAME </h3></td>
+			</tr>
+			<tr>	
+				<td style="text-align:left;display:inline;width:33%"><h3 style="font-weight: normal;display:inline"><b>Start Date : </b> __START_DATE </h3></td>
+			</tr>
+		</table>
+		<div style="clear:both"></div>
+		<br/><br/>
+		
+		<table style="width:100%; font-family: 'trebuchet MS';">
+			<tr>
+			<td style="text-align:left;display:inline;float:left;width:33%" >
+				<h4 style="color:#CD2A25;margin-bottom: 5px;">HTTP Status Codes</h1>
+				<table cellpadding="3" cellspacing="2" style="border: thin solid #FFFFFF; font-size: 16px; font-family: 'trebuchet MS';">
+					<tr>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Code</td>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  count</td>
+					</tr>
+					__HTTP_STATUS_CODES_ROWS
+					  
+				</table>
+			</td>
+			<td style="text-align:left;display:inline;float:left;width:33%">
+				<h4 style="color:#CD2A25;margin-bottom: 5px;">HTTP Request Types</h1>
+				<table cellpadding="3" cellspacing="2" style="border: thin solid #FFFFFF; font-size: 16px;font-family: 'trebuchet MS';">
+					<tr>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Type</td>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Count</td>
+					</tr>
+					__HTTP_REQUEST_TYPES_ROWS
+					  
+				</table>
+			</td>
+			<td style="text-align:left;display:inline;float:left;width:33%">
+				<h4 style="color:#CD2A25;margin-bottom: 5px;">Top Requesting IPs</h1>
+				<table cellpadding="3" cellspacing="2" style="border: thin solid #FFFFFF; font-size: 16px;font-family: 'trebuchet MS';">
+					<tr>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  IP</td>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Count</td>
+					</tr>
+					__TOP_REQUESTING_IPS_ROWS
+					  
+				</table>
+			</td>
+			</tr>
+		</table>
+		<div style="clear:both"></div>
+		<br/><br/>
+		
+		<table style="width:100%; font-family: 'trebuchet MS';">
+			<tr>
+			<td style="text-align:left;display:inline; float:left; width:33%" >
+				<h4 style="color:#CD2A25;margin-bottom: 5px;">Top Requesting Clients</h1>
+				<table cellpadding="3" cellspacing="2" style="border: thin solid #FFFFFF; font-size: 16px;font-family: 'trebuchet MS';">
+					<tr>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Client</td>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  count</td>
+					</tr>
+					__TOP_REQUESTING_CLIENTS_ROWS
+				</table>
+			</td>
+			<td style="text-align:left;display:inline;float:left;width:33%">
+				<h4 style="color:#CD2A25;margin-bottom: 5px;">Top Requesting OSs</h1>
+				<table cellpadding="3" cellspacing="2" style="border: thin solid #FFFFFF; font-size: 16px;font-family: 'trebuchet MS';">
+					<tr>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  OS</td>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Count</td>
+					</tr>
+					__TOP_REQUESTING_OSS_ROWS
+					  
+				</table>
+			</td>
+			<td style="text-align:left;display:inline;float:left;width:33%">
+				<h4 style="color:#CD2A25;margin-bottom: 5px;">Top Requesting Countries</h1>
+				<table cellpadding="3" cellspacing="2" style="border: thin solid #FFFFFF; font-size: 16px;font-family: 'trebuchet MS';">
+					<tr>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Country</td>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Count</td>
+					</tr>
+					__TOP_REQUESTING_COUNTRIES_ROWS
+					  
+				</table>
+			</td>
+			</tr>
+		</table>
+		<div style="clear:both"></div>
+		<br/>
+		
+		<table style="width:100%; font-family: 'trebuchet MS';">
+			<tr>
+			<td style="text-align:left;display:inline; float:left" >
+				<h4 style="color:#CD2A25;margin-bottom: 5px;">Top Requested URLs</h1>
+				<table cellpadding="3" cellspacing="2" style="border: thin solid #FFFFFF; font-size: 16px; font-family: 'trebuchet MS';">
+					<tr>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Requested URL</td>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  count</td>
+					</tr>
+					__TOP_REQUESTED_URLS_ROWS
+					  
+				</table>
+			</td>
+		</table>
+		<div style="clear:both"></div>
+		<br/>
+		
+		
+		<table style="width:100%; font-family: 'trebuchet MS';">
+			<tr>
+			<td style="text-align:left;display:inline; float:left" >
+				<h4 style="color:#CD2A25;margin-bottom: 5px;">Top Referer URLs</h1>
+				<table cellpadding="3" cellspacing="2" style="border: thin solid #FFFFFF; font-size: 16px;font-family: 'trebuchet MS';">
+					<tr>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Refer URL</td>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  count</td>
+					</tr>
+					__TOP_REFERER_ULS_ROWS
+					  
+				</table>
+			</td>
+			</tr>
+		</table>
+		<div style="clear:both"></div>
+		<br />
+		
+		
+		<table style="width:100%; font-family: 'trebuchet MS';">
+			<tr>
+			<td style="text-align:left;display:inline; float:left" >
+				<h4 style="color:#CD2A25;margin-bottom: 5px;">Longest response time URLs</h1>
+				<table cellpadding="3" cellspacing="2" style="border: thin solid #FFFFFF; font-size: 16px;font-family: 'trebuchet MS'; ">
+					<tr>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  URL</td>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Time</td>
+					</tr>
+					__LONGEST_RESPONSE_TIME_URLS_ROWS
+					  
+				</table>
+			</td>
+			</tr>
+		</table>
+		<div style="clear:both"></div>
+		<br />
+		
+		<table style="width:100%; font-family: 'trebuchet MS';">
+			<tr>
+			<td style="text-align:left;display:inline; float:left" >
+				<h4 style="color:#CD2A25;margin-bottom: 5px;">Largest response size URLs</h1>
+				<table cellpadding="3" cellspacing="2" style="border: thin solid #FFFFFF; font-size: 16px;font-family: 'trebuchet MS';">
+					<tr>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  URL</td>
+						<td style="background-color: #1D5E89; color: white; font-weight: bold;min-width:50px;padding:5px">
+							  Response size</td>
+					</tr>
+					__LARGEST_RESPONSE_SIZE_URLS_ROWS
+					  
+				</table>
+			</td>
+			</tr>
+		</table>
+		<div style="clear:both"></div>
+	</body>
+</html>
+
+'''

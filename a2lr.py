@@ -9,7 +9,7 @@
 # NOTE: consider changing the constants in the conf.py file
 #
 # Description:
-# This is a Python script is meant to fetch Apache access log files for an enviroment to get
+# This is a Python script is meant to fetch Apache access log files of an enviroment to get
 # an overall staus of web accessability of an online application. It can be run as a cronjob, also, it can be run manually 
 # by running ./al2r.py .
 #
@@ -34,6 +34,12 @@ import datetime
 import collections
 import operator
 import pprint
+import csv
+import math
+import commands
+import smtplib
+import getpass
+import socket
 
 ##################################################
 # Section 01. DEFINIONS 				   	     #
@@ -47,6 +53,7 @@ from ua_parser import user_agent_parser
 
 
 # computing reference time to discard log lines older than that time based on PERIOD value
+START_DATE = datetime.datetime.now()
 period_args = ''.join(conf.PERIOD.split())
 period_measure = period_args[-1].lower()
 period_val = period_args[0:-1]
@@ -64,11 +71,11 @@ except Exception:
 	exit(1)
 
 if period_measure == 'h':
-	dt_ref = datetime.datetime.now() - datetime.timedelta(hours=period_val)
+	dt_ref = START_DATE - datetime.timedelta(hours=period_val)
 elif period_measure == 'm':
-	dt_ref = datetime.datetime.now() - datetime.timedelta(minutes=period_val)
+	dt_ref = START_DATE - datetime.timedelta(minutes=period_val)
 else:
-	dt_ref = datetime.datetime.now() - datetime.timedelta(days=period_val)
+	dt_ref = START_DATE - datetime.timedelta(days=period_val)
 
 #print dt_ref
 
@@ -155,7 +162,11 @@ else:
 		print ('\t' + logfile + ' copied to ' + TEMP_DIR)
 
 
-
+#loading IP Gelolaction DB
+ip_geo_db_f = open(IP_COUNTRY_DB)
+csvReader = csv.reader(ip_geo_db_f)
+ip_geo_db_data = list(csvReader)
+#print(ip_geo_db_data[0])
 
 ##################################################
 # Section 03. Reading logfiles 				     #
@@ -285,6 +296,18 @@ for log in logs:
  		HTTP_METHODS_COUNT[log_method] += 1
 
 #print HTTP_STATUS_CODE_OCCUR
+for k,v in MOST_REQUESTING_IPs.items():
+	#print(k)
+	ip_vals = k.split('.')
+	ip_number = int(ip_vals[0]) * 16777216 + int(ip_vals[1]) * 65536 + int(ip_vals[2]) * 256 + int(ip_vals[3])
+	for ip_range in ip_geo_db_data:
+		if ip_number >= int(ip_range[0]) and ip_number <= int(ip_range[1]):
+			country_val = ip_range[3] + ' (' + ip_range[2] + ')'
+			break
+	if country_val in TOP_REQUESTING_COUNTERIES.keys():
+		TOP_REQUESTING_COUNTERIES[country_val] += v
+	else:
+		TOP_REQUESTING_COUNTERIES.update({country_val : v })
 
 ##################################################
 # Section 05. Report formatting 				 #
@@ -294,55 +317,190 @@ for log in logs:
 #test
 #
 
+if SEND_EMAIL:
+	__HTTP_STATUS_CODES_ROWS = '' 
+	__HTTP_REQUEST_TYPES_ROWS = ''
+	__TOP_REQUESTING_IPS_ROWS = ''
+	__TOP_REQUESTING_CLIENTS_ROWS = ''
+	__TOP_REQUESTING_OSS_ROWS = ''
+	__TOP_REQUESTING_COUNTRIES_ROWS = ''
+	__TOP_REQUESTED_URLS_ROWS = ''
+	__TOP_REFERER_ULS_ROWS = ''
+	__LONGEST_RESPONSE_TIME_URLS_ROWS = ''
+	__LARGEST_RESPONSE_SIZE_URLS_ROWS = ''
+
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__ENVIRONMENT', ENVIRONMENT)
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__PERIOD_FRAME', PERIOD )
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__START_DATE', START_DATE.strftime("%Y-%m-%d %H:%M:%S"))
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__FROM_EMAIL', getpass.getuser() + '@' +  socket.gethostname())
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__TO_EMAILS', ', '.join(TO_EMAILS) )
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__SUBJECT', ENVIRONMENT + ' | a2lr ')
+
+
+
 #status
 for i,v in sorted(HTTP_STATUS_CODE_OCCUR.items(), key=operator.itemgetter(0)):
 #for i,v in collections.OrderedDict(sorted(HTTP_STATUS_CODE_OCCUR.items())).items():
 	if v > 0:
 		print( 'Status ' + i + ' : ' + str(v) )
+		if SEND_EMAIL:
+			__HTTP_STATUS_CODES_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + i + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + str(v) + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
+
 
 print('\n')
 
 #Longest resonse time
 for i,v in sorted(LONGEST_URL_RESPONSE_TIME.items(), key=operator.itemgetter(1), reverse=True)[:10]:
 	if v > 0:
-		print( 'URL response time ' + i + ' : ' + str(v) )
+		log_time_string = ''
+		if v / 1000000 > 60 :
+			log_time_string = str(v / 60000000  ) + ' mins'
+			arb = (v  % 60000000) / 1000000
+			if arb > 0 :
+				log_time_string += ' , ' + str(arb) + ' secs'
+		else:
+			log_time_string = str( v / 1000000)  + ' seconds '
+
+		print( 'URL response time ' + i + ' : ' + log_time_string)
+		if SEND_EMAIL:
+			__LONGEST_RESPONSE_TIME_URLS_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + i + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + log_time_string + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
 
 print('\n')
 
 #Largest resonse time
-for i,v in sorted(LARGEST_URL_RESPONSE_SIZE.items(), key=operator.itemgetter(1), reverse=True)[:10]:
+for k,v in sorted(LARGEST_URL_RESPONSE_SIZE.items(), key=operator.itemgetter(1), reverse=True)[:10]:
 	if v > 0:
-		print( 'URL response size  ' + i + ' : ' + str(v) )
+		v = v / 1024
+		size_name = ("KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+		i = int(math.floor(math.log(v,1024)))
+		p = math.pow(1024,i)
+		s = round(v/p,2)
+		response_size_str =  str(s) + str(size_name[i])
+
+		print( 'URL response size  ' + k + ' : ' + response_size_str )
+		if SEND_EMAIL:
+			__LARGEST_RESPONSE_SIZE_URLS_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + k + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + response_size_str + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
 
 print('\n')
 
 #most requesting ips
 for i,v in sorted(MOST_REQUESTING_IPs.items(), key=operator.itemgetter(1), reverse=True)[:10]:
 	print( ' IP ' + i  + ' : ' + str(v) + ' times' )
+	if SEND_EMAIL:
+			__TOP_REQUESTING_IPS_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + i + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + str(v) + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
 
 print('\n')
 
 #most requesting URLS
 for i,v in sorted(MOST_REQUESTING_URLS.items(), key=operator.itemgetter(1), reverse=True)[:10]:
 	print( ' URL ' + i  + ' : ' + str(v) + ' times' )
+	if SEND_EMAIL:
+			__TOP_REQUESTED_URLS_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + i + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + str(v) + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
 
 print('\n')
 
 #most referering URLs
 for i,v in sorted(MOST_REFERING_URLS.items(), key=operator.itemgetter(1), reverse=True)[:10]:
 	print( ' Referer URL  ' + i  + ' : ' + str(v) + ' times' )
+	if SEND_EMAIL:
+			__TOP_REFERER_ULS_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + i + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + str(v) + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
 
 print('\n')
 
 #most requesting clients 
 for i,v in sorted(MOST_REQUESTING_CLIENTS.items(), key=operator.itemgetter(1), reverse=True):
-	print( ' Client  ' + i  + ' : ' + str(v) + ' times' )
+	if i != '-':
+		print( ' Client  ' + i  + ' : ' + str(v) + ' times' )
+		if SEND_EMAIL:
+				__TOP_REQUESTING_CLIENTS_ROWS += ('<tr>\n'
+											  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+											   + i + 
+											   ' </td>\n'
+											   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+											   + str(v) + 
+											   ' </td>\n'
+											   '</tr>\n'
+											)
 
 print('\n')
 
-#most requesting clients 
+#most requesting OSs 
 for i,v in sorted(MOST_REQUESTING_OS.items(), key=operator.itemgetter(1), reverse=True)[:20]:
 	print( ' OS  ' + i  + ' : ' + str(v) + ' times' )
+	if SEND_EMAIL:
+			__TOP_REQUESTING_OSS_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + i + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + str(v) + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
+
+print('\n')
+
+#Top requesting Countries 
+for i,v in sorted(TOP_REQUESTING_COUNTERIES.items(), key=operator.itemgetter(1), reverse=True)[:20]:
+	print( ' Country  ' + i  + ' : ' + str(v) + ' times' )
+	if SEND_EMAIL:
+			__TOP_REQUESTING_COUNTRIES_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + i + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + str(v) + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
 
 print('\n')
 
@@ -351,6 +509,16 @@ print('\n')
 for i,v in HTTP_METHODS_COUNT.items():
 	if v > 0:
 		print( i + ' : ' + str(v) )
+		if SEND_EMAIL:
+			__HTTP_REQUEST_TYPES_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + i + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + str(v) + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
 
 print('\n')
 ##################################################
@@ -366,3 +534,27 @@ for file in os.listdir(TEMP_DIR):
         #elif os.path.isdir(file_path): shutil.rmtree(file_path)
     except Exception , e:
         print(e)
+
+
+if SEND_EMAIL:
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__HTTP_STATUS_CODES_ROWS', __HTTP_STATUS_CODES_ROWS)
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__HTTP_REQUEST_TYPES_ROWS', __HTTP_REQUEST_TYPES_ROWS)
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__TOP_REQUESTING_IPS_ROWS', __TOP_REQUESTING_IPS_ROWS)
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__TOP_REQUESTING_CLIENTS_ROWS', __TOP_REQUESTING_CLIENTS_ROWS)
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__TOP_REQUESTING_OSS_ROWS', __TOP_REQUESTING_OSS_ROWS)
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__TOP_REQUESTING_COUNTRIES_ROWS', __TOP_REQUESTING_COUNTRIES_ROWS)
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__TOP_REQUESTED_URLS_ROWS', __TOP_REQUESTED_URLS_ROWS)
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__TOP_REFERER_ULS_ROWS', __TOP_REFERER_ULS_ROWS)
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__LONGEST_RESPONSE_TIME_URLS_ROWS', __LONGEST_RESPONSE_TIME_URLS_ROWS)
+	EMAIL_HTML_TEMPLATE =  EMAIL_HTML_TEMPLATE.replace('__LARGEST_RESPONSE_SIZE_URLS_ROWS', __LARGEST_RESPONSE_SIZE_URLS_ROWS)
+	
+	#f = open('DATA/email.html', 'w')
+	#f.write(EMAIL_HTML_TEMPLATE)
+	#f.close()
+
+	try:
+		smtpObj = smtplib.SMTP('localhost')
+		smtpObj.sendmail( 'test@test.com', TO_EMAILS , EMAIL_HTML_TEMPLATE)         
+		print "Successfully sent email"
+	except SMTPException:
+		print "Error: unable to send email"
