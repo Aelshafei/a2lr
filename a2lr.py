@@ -141,6 +141,7 @@ if REMOTE:
 					exit(1)
 
 	print('\t ... DONE')
+	print('\n')
 
 else:
 	print(' * getting files from local server')
@@ -160,6 +161,7 @@ else:
 	for logfile in logfiles:
 		shutil.copy2(logfile, TEMP_DIR)
 		print ('\t' + logfile + ' copied to ' + TEMP_DIR)
+	print('\n')
 
 
 #loading IP Gelolaction DB
@@ -176,19 +178,23 @@ ip_geo_db_data = list(csvReader)
 TOKEN_POS = {} #dictionary of apache access log tokens position in log line based on LOGFORMAT value
 LFS = LOGFORMAT.split('\"')
 
+#getting token positions in log lines
 for i,v in TOKEN_DICT.items():
-	print( i )
+	#print( i )
 
 	TOKEN_POS.update({i : [LFS.index(s) for s in LFS if i in s]})
 	if i == LFS[TOKEN_POS[i][0]]:
 		TOKEN_POS[i].append(-1)
 	else:
 		TOKEN_POS[i].append(LFS[TOKEN_POS[i][0]].split().index(i))
-	print( TOKEN_POS[i] )
+	#print( TOKEN_POS[i] )
 
 
 logs = [] #this list will hold the log lines
 
+
+print(' * reading log files ..')
+#loading log line from log giles
 for log_file in os.listdir(TEMP_DIR):
 	#print log_file
 	log_file_path = os.path.join(TEMP_DIR, log_file)
@@ -210,9 +216,12 @@ for log_file in os.listdir(TEMP_DIR):
 				if datetime.datetime(*line_details['time_stamp'][0:6]) > dt_ref and  not ( line_details['user_agent'] == '-'  and  line_details['request_line'] == '-' and line_details['response_size'] == '-'):
 					logs.append(line_details)
 
-pprint.pprint( logs[0] )
+#pprint.pprint( logs[0] )
 
-print( len(logs) )
+#print( len(logs) )
+
+print ('\t ' + str(len(logs)) + ' log lines loaded ..\n')
+
 
 
 
@@ -222,6 +231,7 @@ print( len(logs) )
 ##################################################
 
 
+print(' * processing logs ..')
 
 
 for log in logs:
@@ -264,7 +274,7 @@ for log in logs:
 	 	else:
 	 		LARGEST_URL_RESPONSE_SIZE.update({ log['request_line'].split()[1] : int(log['response_size']) })
 
-	# Most reuesting Clients
+	#getting  Most reuesting Clients
 	if log['user_agent_details']['user_agent']['family'] != 'Other':
 		if log['user_agent_details']['user_agent']['family'] in MOST_REQUESTING_CLIENTS.keys():
 			MOST_REQUESTING_CLIENTS[log['user_agent_details']['user_agent']['family']] += 1
@@ -276,7 +286,7 @@ for log in logs:
 		else:
 			MOST_REQUESTING_CLIENTS.update({ log['user_agent_details']['string'].split()[0].split('/')[0] : 1})
 
-	# Most reuesting OS
+	#getting Most reuesting OS
 	if log['user_agent_details']['os']['family'] != 'Other':
 		if log['user_agent_details']['os']['family'] in MOST_REQUESTING_OS.keys():
 			MOST_REQUESTING_OS[log['user_agent_details']['os']['family']] += 1
@@ -295,7 +305,7 @@ for log in logs:
 	if log_method in HTTP_METHODS_COUNT.keys():
  		HTTP_METHODS_COUNT[log_method] += 1
 
-#print HTTP_STATUS_CODE_OCCUR
+#Calaculating most requesting counteries
 for k,v in MOST_REQUESTING_IPs.items():
 	#print(k)
 	ip_vals = k.split('.')
@@ -309,6 +319,8 @@ for k,v in MOST_REQUESTING_IPs.items():
 	else:
 		TOP_REQUESTING_COUNTERIES.update({country_val : v })
 
+
+print('\t Peocessing done, formatting for printing ..\n\n')
 ##################################################
 # Section 05. Report formatting 				 #
 ##################################################
@@ -338,11 +350,12 @@ if SEND_EMAIL:
 
 
 
-#status
+#printing http status
+print(bcolors.HEADER + 'HHTP Status codes' + bcolors.ENDC)
 for i,v in sorted(HTTP_STATUS_CODE_OCCUR.items(), key=operator.itemgetter(0)):
 #for i,v in collections.OrderedDict(sorted(HTTP_STATUS_CODE_OCCUR.items())).items():
 	if v > 0:
-		print( 'Status ' + i + ' : ' + str(v) )
+		print( '   ' + i + ' : ' + str(v) )
 		if SEND_EMAIL:
 			__HTTP_STATUS_CODES_ROWS += ('<tr>\n'
 										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
@@ -357,59 +370,32 @@ for i,v in sorted(HTTP_STATUS_CODE_OCCUR.items(), key=operator.itemgetter(0)):
 
 print('\n')
 
-#Longest resonse time
-for i,v in sorted(LONGEST_URL_RESPONSE_TIME.items(), key=operator.itemgetter(1), reverse=True)[:10]:
-	if v > 0:
-		log_time_string = ''
-		if v / 1000000 > 60 :
-			log_time_string = str(v / 60000000  ) + ' mins'
-			arb = (v  % 60000000) / 1000000
-			if arb > 0 :
-				log_time_string += ' , ' + str(arb) + ' secs'
-		else:
-			log_time_string = str( v / 1000000)  + ' seconds '
 
-		print( 'URL response time ' + i + ' : ' + log_time_string)
+#printing http methods
+print(bcolors.HEADER + 'HHTP Methods' + bcolors.ENDC)
+for i,v in HTTP_METHODS_COUNT.items():
+	if v > 0:
+		print( '   ' +  i + ' : ' + str(v) )
 		if SEND_EMAIL:
-			__LONGEST_RESPONSE_TIME_URLS_ROWS += ('<tr>\n'
+			__HTTP_REQUEST_TYPES_ROWS += ('<tr>\n'
 										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
 										   + i + 
 										   ' </td>\n'
 										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
-										   + log_time_string + 
+										   + str(v) + 
 										   ' </td>\n'
 										   '</tr>\n'
 										)
 
 print('\n')
 
-#Largest resonse time
-for k,v in sorted(LARGEST_URL_RESPONSE_SIZE.items(), key=operator.itemgetter(1), reverse=True)[:10]:
-	if v > 0:
-		v = v / 1024
-		size_name = ("KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-		i = int(math.floor(math.log(v,1024)))
-		p = math.pow(1024,i)
-		s = round(v/p,2)
-		response_size_str =  str(s) + str(size_name[i])
 
-		print( 'URL response size  ' + k + ' : ' + response_size_str )
-		if SEND_EMAIL:
-			__LARGEST_RESPONSE_SIZE_URLS_ROWS += ('<tr>\n'
-										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
-										   + k + 
-										   ' </td>\n'
-										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
-										   + response_size_str + 
-										   ' </td>\n'
-										   '</tr>\n'
-										)
-
-print('\n')
 
 #most requesting ips
+print(bcolors.HEADER + 'Most Requesting IPs' + bcolors.ENDC)
+
 for i,v in sorted(MOST_REQUESTING_IPs.items(), key=operator.itemgetter(1), reverse=True)[:10]:
-	print( ' IP ' + i  + ' : ' + str(v) + ' times' )
+	print( '   ' + i  + ' : ' + str(v) + ' times' )
 	if SEND_EMAIL:
 			__TOP_REQUESTING_IPS_ROWS += ('<tr>\n'
 										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
@@ -423,42 +409,13 @@ for i,v in sorted(MOST_REQUESTING_IPs.items(), key=operator.itemgetter(1), rever
 
 print('\n')
 
-#most requesting URLS
-for i,v in sorted(MOST_REQUESTING_URLS.items(), key=operator.itemgetter(1), reverse=True)[:10]:
-	print( ' URL ' + i  + ' : ' + str(v) + ' times' )
-	if SEND_EMAIL:
-			__TOP_REQUESTED_URLS_ROWS += ('<tr>\n'
-										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
-										   + i + 
-										   ' </td>\n'
-										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
-										   + str(v) + 
-										   ' </td>\n'
-										   '</tr>\n'
-										)
 
-print('\n')
+#printing most requesting clients 
+print(bcolors.HEADER + 'Most requesting clients' + bcolors.ENDC)
 
-#most referering URLs
-for i,v in sorted(MOST_REFERING_URLS.items(), key=operator.itemgetter(1), reverse=True)[:10]:
-	print( ' Referer URL  ' + i  + ' : ' + str(v) + ' times' )
-	if SEND_EMAIL:
-			__TOP_REFERER_ULS_ROWS += ('<tr>\n'
-										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
-										   + i + 
-										   ' </td>\n'
-										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
-										   + str(v) + 
-										   ' </td>\n'
-										   '</tr>\n'
-										)
-
-print('\n')
-
-#most requesting clients 
-for i,v in sorted(MOST_REQUESTING_CLIENTS.items(), key=operator.itemgetter(1), reverse=True):
+for i,v in sorted(MOST_REQUESTING_CLIENTS.items(), key=operator.itemgetter(1), reverse=True)[:10]:
 	if i != '-':
-		print( ' Client  ' + i  + ' : ' + str(v) + ' times' )
+		print( '   ' + i  + ' : ' + str(v) + ' times' )
 		if SEND_EMAIL:
 				__TOP_REQUESTING_CLIENTS_ROWS += ('<tr>\n'
 											  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
@@ -472,9 +429,10 @@ for i,v in sorted(MOST_REQUESTING_CLIENTS.items(), key=operator.itemgetter(1), r
 
 print('\n')
 
-#most requesting OSs 
-for i,v in sorted(MOST_REQUESTING_OS.items(), key=operator.itemgetter(1), reverse=True)[:20]:
-	print( ' OS  ' + i  + ' : ' + str(v) + ' times' )
+#printing most requesting OSs 
+print(bcolors.HEADER + 'Most Requesting OSs' + bcolors.ENDC)
+for i,v in sorted(MOST_REQUESTING_OS.items(), key=operator.itemgetter(1), reverse=True)[:10]:
+	print( '   ' + i  + ' : ' + str(v) + ' times' )
 	if SEND_EMAIL:
 			__TOP_REQUESTING_OSS_ROWS += ('<tr>\n'
 										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
@@ -488,9 +446,10 @@ for i,v in sorted(MOST_REQUESTING_OS.items(), key=operator.itemgetter(1), revers
 
 print('\n')
 
-#Top requesting Countries 
-for i,v in sorted(TOP_REQUESTING_COUNTERIES.items(), key=operator.itemgetter(1), reverse=True)[:20]:
-	print( ' Country  ' + i  + ' : ' + str(v) + ' times' )
+#printing Top requesting Countries 
+print(bcolors.HEADER + 'Top requesting Countries' + bcolors.ENDC)
+for i,v in sorted(TOP_REQUESTING_COUNTERIES.items(), key=operator.itemgetter(1), reverse=True)[:10]:
+	print( '   ' + i  + ' : ' + str(v) + ' times' )
 	if SEND_EMAIL:
 			__TOP_REQUESTING_COUNTRIES_ROWS += ('<tr>\n'
 										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
@@ -504,13 +463,13 @@ for i,v in sorted(TOP_REQUESTING_COUNTERIES.items(), key=operator.itemgetter(1),
 
 print('\n')
 
+#printing most requesting URLS
+print(bcolors.HEADER + 'Most requesting URLs' + bcolors.ENDC)
 
-# http methods
-for i,v in HTTP_METHODS_COUNT.items():
-	if v > 0:
-		print( i + ' : ' + str(v) )
-		if SEND_EMAIL:
-			__HTTP_REQUEST_TYPES_ROWS += ('<tr>\n'
+for i,v in sorted(MOST_REQUESTING_URLS.items(), key=operator.itemgetter(1), reverse=True)[:10]:
+	print( '   ' + i  + ' : ' + str(v) + ' times' )
+	if SEND_EMAIL:
+			__TOP_REQUESTED_URLS_ROWS += ('<tr>\n'
 										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
 										   + i + 
 										   ' </td>\n'
@@ -521,19 +480,78 @@ for i,v in HTTP_METHODS_COUNT.items():
 										)
 
 print('\n')
-##################################################
-# Section 02. Finazlization 				     #
-##################################################
 
-#remove temp log files
-for file in os.listdir(TEMP_DIR):
-    file_path = os.path.join(TEMP_DIR, file)
-    try:
-        if os.path.isfile(file_path):
-            os.unlink(file_path)
-        #elif os.path.isdir(file_path): shutil.rmtree(file_path)
-    except Exception , e:
-        print(e)
+#printing most referering URLs
+print(bcolors.HEADER + 'Most referering URLs' + bcolors.ENDC)
+for i,v in sorted(MOST_REFERING_URLS.items(), key=operator.itemgetter(1), reverse=True)[:10]:
+	print( '   ' + i  + ' : ' + str(v) + ' times' )
+	if SEND_EMAIL:
+			__TOP_REFERER_ULS_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + i + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + str(v) + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
+
+print('\n')
+
+#printing Longest resonse time
+print(bcolors.HEADER + 'Longest respone time' + bcolors.ENDC)
+for i,v in sorted(LONGEST_URL_RESPONSE_TIME.items(), key=operator.itemgetter(1), reverse=True)[:10]:
+	if v > 0:
+		log_time_string = ''
+		if v / 1000000 > 60 :
+			log_time_string = str(v / 60000000  ) + ' mins'
+			arb = (v  % 60000000) / 1000000
+			if arb > 0 :
+				log_time_string += ' , ' + str(arb) + ' secs'
+		else:
+			log_time_string = str( v / 1000000)  + ' seconds '
+
+		print( '   ' + i + ' : ' + log_time_string)
+		if SEND_EMAIL:
+			__LONGEST_RESPONSE_TIME_URLS_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + i + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + log_time_string + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
+
+print('\n')
+
+#printing Largest resonse size
+print(bcolors.HEADER + 'Largest respone size' + bcolors.ENDC)
+
+for k,v in sorted(LARGEST_URL_RESPONSE_SIZE.items(), key=operator.itemgetter(1), reverse=True)[:10]:
+	if v > 0:
+		v = v / 1024
+		size_name = ("KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+		i = int(math.floor(math.log(v,1024)))
+		p = math.pow(1024,i)
+		s = round(v/p,2)
+		response_size_str =  str(s) + str(size_name[i])
+
+		print( '   ' + k + ' : ' + response_size_str )
+		if SEND_EMAIL:
+			__LARGEST_RESPONSE_SIZE_URLS_ROWS += ('<tr>\n'
+										  '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + k + 
+										   ' </td>\n'
+										   '<td style="background-color: #A1C6DF; color: black;min-width:50px;padding:5px">\n'
+										   + response_size_str + 
+										   ' </td>\n'
+										   '</tr>\n'
+										)
+
+print('\n')
+
+
 
 
 if SEND_EMAIL:
@@ -551,10 +569,26 @@ if SEND_EMAIL:
 	#f = open('DATA/email.html', 'w')
 	#f.write(EMAIL_HTML_TEMPLATE)
 	#f.close()
-
+	print('\n\n * Sending email report ..')
 	try:
 		smtpObj = smtplib.SMTP('localhost')
 		smtpObj.sendmail( 'test@test.com', TO_EMAILS , EMAIL_HTML_TEMPLATE)         
-		print "Successfully sent email"
+		print " \t Successfully sent email .."
 	except SMTPException:
 		print "Error: unable to send email"
+
+##################################################
+# Section 02. Finazlization 				     #
+##################################################
+
+#remove temp log files
+for file in os.listdir(TEMP_DIR):
+    file_path = os.path.join(TEMP_DIR, file)
+    try:
+        if os.path.isfile(file_path):
+            os.unlink(file_path)
+        #elif os.path.isdir(file_path): shutil.rmtree(file_path)
+    except Exception , e:
+        print(e)
+
+
