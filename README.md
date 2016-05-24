@@ -1,5 +1,5 @@
 # a2lr | Apache Access Log Reporter
-a2lr project aims to be a comprehensive solution to analyze and generate reports based on **Apache Access Log files** in order to get  overall   accessability staus of an online application. It can be run as a cronjob, also, it can be run manually .
+a2lr project aims to be a comprehensive solution to analyze and generate reports based on **Apache Access Log files** in order to get  overall   accessability status of an online application. It can be run as a cronjob, also, it can be run manually .
 This project targets all grades of web application from a tiny web server to a complex enviroment with several web servers .
 
 ## Features
