@@ -152,7 +152,7 @@ else:
 	for p, ds, fs in os.walk(DIRECTORY):
 	    for fn in fs:
 	        filepath = os.path.join(p, fn)
-	        if os.path.getmtime(filepath) >= past:
+	        if os.path.getmtime(filepath) >= past and COMMON_LOGFILE_NAME in filepath :
 	            logfiles.append(filepath)
 
 
