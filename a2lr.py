@@ -312,7 +312,10 @@ for k,v in MOST_REQUESTING_IPs.items():
 	ip_number = int(ip_vals[0]) * 16777216 + int(ip_vals[1]) * 65536 + int(ip_vals[2]) * 256 + int(ip_vals[3])
 	for ip_range in ip_geo_db_data:
 		if ip_number >= int(ip_range[0]) and ip_number <= int(ip_range[1]):
-			country_val = ip_range[3] + ' (' + ip_range[2] + ')'
+			if ip_range[3] == '-':
+				country_val = 'Private (VPN)'
+			else
+				country_val = ip_range[3] + ' (' + ip_range[2] + ')'
 			break
 	if country_val in TOP_REQUESTING_COUNTERIES.keys():
 		TOP_REQUESTING_COUNTERIES[country_val] += v
